@@ -6,8 +6,8 @@
       "direction": "in",
       "leaseCollectionName": "leases",
       "connectionStringSetting": "COSMOSDB_CONNECTION_STRING",
-      "databaseName": "SimpleDB",
-      "collectionName": "Accounts",
+      "databaseName": "%COSMOSDB_DATABASENAME%",
+      "collectionName": "%COSMOSDB_CONTAINERNAME%",
       "createLeaseCollectionIfNotExists": true
     }
   ]

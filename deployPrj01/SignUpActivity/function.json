@@ -8,8 +8,8 @@
     {
       "name": "accountDocument",
       "type": "cosmosDB",
-      "databaseName": "SimpleDB",
-      "collectionName": "Accounts",
+      "databaseName": "%COSMOSDB_DATABASENAME%",
+      "collectionName": "%COSMOSDB_CONTAINERNAME%",
       "createIfNotExists": true,
       "connectionStringSetting": "COSMOSDB_CONNECTION_STRING",
       "direction": "out"

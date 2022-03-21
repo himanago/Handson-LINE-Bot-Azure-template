@@ -12,7 +12,7 @@ var containerName = 'files'
 
 param accountName string = 'cosmos-${toLower(ramdom)}'
 var databaseName = 'SimpleDB'
-var cosmosContainerName = 'Items'
+var cosmosContainerName = 'Accounts'
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
   name: storageAccountName
