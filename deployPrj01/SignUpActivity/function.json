@@ -1,0 +1,18 @@
+{
+  "bindings": [
+    {
+      "name": "item",
+      "type": "activityTrigger",
+      "direction": "in"
+    },
+    {
+      "name": "accountDocument",
+      "type": "cosmosDB",
+      "databaseName": "SimpleDB",
+      "collectionName": "Accounts",
+      "createIfNotExists": true,
+      "connectionStringSetting": "COSMOSDB_CONNECTION_STRING",
+      "direction": "out"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "bindings": [
+    {
+      "type": "cosmosDBTrigger",
+      "name": "documents",
+      "direction": "in",
+      "leaseCollectionName": "leases",
+      "connectionStringSetting": "COSMOSDB_CONNECTION_STRING",
+      "databaseName": "SimpleDB",
+      "collectionName": "Accounts",
+      "createLeaseCollectionIfNotExists": true
+    }
+  ]
+}

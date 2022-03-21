@@ -187,6 +187,10 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
           name: 'COSMOSDB_CONTAINERNAME'
           value: cosmosContainerName
         }
+        {
+          name: 'COSMOSDB_CONNECTION_STRING'
+          value: 'AccountEndpoint=${cosmosAccount.properties.documentEndpoint};AccountKey=${cosmosAccount.listKeys().primaryMasterKey};'
+        }
       ]
     }
     httpsOnly: true
