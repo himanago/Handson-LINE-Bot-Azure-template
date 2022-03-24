@@ -12,7 +12,7 @@ var containerName = 'files'
 
 param accountName string = 'cosmos-${toLower(ramdom)}'
 var databaseName = 'SimpleDB'
-var cosmosContainerName = 'Items'
+var cosmosContainerName = 'Accounts'
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
   name: storageAccountName
@@ -186,6 +186,10 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
         {
           name: 'COSMOSDB_CONTAINERNAME'
           value: cosmosContainerName
+        }
+        {
+          name: 'COSMOSDB_CONNECTION_STRING'
+          value: 'AccountEndpoint=${cosmosAccount.properties.documentEndpoint};AccountKey=${cosmosAccount.listKeys().primaryMasterKey};'
         }
       ]
     }
