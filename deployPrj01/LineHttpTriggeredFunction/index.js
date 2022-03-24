@@ -47,16 +47,16 @@ const app = express();
 // about the middleware, please refer to doc
 app.post('/api/linehttptriggeredfunction', line.middleware(config), (req, res) => {
   Promise
-    .all(req.body.events.map(handleEvent))
+    .all(req.body.events.map(e => handleEvent(e, req.context)))
     .then((result) => res.json(result))
     .catch((err) => {
-      console.error(err);
+      req.context.log.error(err);
       res.status(500).end();
     });
 });
 
 // event handler
-async function handleEvent(event) {
+async function handleEvent(event, context) {
   const userId = event.source.userId;
   if (event.type !== 'message' && event.type !== 'postback') {
     // ignore non-text-message event
