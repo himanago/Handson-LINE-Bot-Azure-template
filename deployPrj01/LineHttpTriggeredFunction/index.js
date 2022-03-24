@@ -51,7 +51,7 @@ app.post('/api/linehttptriggeredfunction', line.middleware(config), (req, res) =
     .all(req.body.events.map(e => handleEvent(e, req.context)))
     .then((result) => res.json(result))
     .catch((err) => {
-      console.error(err);
+      req.context.log.error(err);
       res.status(500).end();
     });
 });
@@ -173,6 +173,31 @@ async function handleEvent(event, context) {
       // 会員名待機中に送られたテキストを会員名としてDB登録するため、テキストを投げる
       await durableClient.raiseEvent(userId, 'AccountNameEvent', { lineUserId: userId, accountName: event.message.text });
       return;
+    } else if (event.message.text === '退会') {
+      const query = {
+        query: 'SELECT * from c WHERE c.lineUserId = @lineUserId',
+        parameters: [
+          { name: "@lineUserId", value: userId }
+        ]
+      };
+      
+      const { resources: items } = await cosmosDBContainer.items
+        .query(query)
+        .fetchAll();
+      
+      for (const item of items) {
+        // データ論理削除
+        item.isDeleted = true;
+
+        const { resource: updatedItem } = await cosmosDBContainer
+          .item(item.id)
+          .replace(item);
+      }
+
+      return client.replyMessage(event.replyToken,{
+        type: 'text',
+        text: '退会しました。'
+      });
     }
   } else if (event.message.type === 'image') {
     //https://developers.line.biz/ja/reference/messaging-api/#image-message

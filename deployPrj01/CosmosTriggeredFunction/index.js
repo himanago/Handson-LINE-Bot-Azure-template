@@ -12,6 +12,12 @@ module.exports = async function (context, documents) {
 
   // 登録のあった会員情報ごとに処理
   for (const item of documents) {
+    // 論理削除されていたらリッチメニューを外す
+    if (item.isDeleted) {
+      await client.unlinkRichMenuFromUser(item.lineUserId);
+      continue;
+    }
+
     // 会員名でQRコード生成
     const qr = await QRCode.toBuffer(item.accountName, { width: richMenuHeight });
     
