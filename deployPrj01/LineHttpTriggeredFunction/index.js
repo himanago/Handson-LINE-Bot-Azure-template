@@ -9,6 +9,7 @@ const { v4: uuidv4 } = require('uuid');
 const { BlobServiceClient } = require("@azure/storage-blob");
 const CosmosClient = require("@azure/cosmos").CosmosClient;
 const { getStreamData } = require('./helpers/stream.js'); 
+const df = require('durable-functions');
 
 // Azure Storage
 const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.STORAGE_CONNECTION_STRING);
@@ -58,6 +59,10 @@ app.post('/api/linehttptriggeredfunction', line.middleware(config), (req, res) =
 // event handler
 async function handleEvent(event, context) {
   const userId = event.source.userId;
+  // 会員登録フローの制御
+  const durableClient = df.getClient(context);
+  const orchestrationStatus = await durableClient.getStatus(userId);
+
   if (event.type !== 'message' && event.type !== 'postback') {
     // ignore non-text-message event
     return Promise.resolve(null);
@@ -69,6 +74,27 @@ async function handleEvent(event, context) {
         type: 'sticker',
         packageId: "11537",
         stickerId: "52002735"
+      });
+    } else if (event.postback.data === 'signup') {
+      // オーケストレーターに会員名を待機させる
+      await durableClient.raiseEvent(userId, 'StartSignUpEvent', null);
+
+      return client.replyMessage(event.replyToken,{
+        type: 'text',
+        text: '会員名を送信してください。'
+      });
+    } else if (event.postback.data === 'signup_cancel') {
+      // オーケストレーター停止
+      await durableClient.terminate(userId, 'User Canceled');
+
+      return client.replyMessage(event.replyToken,{
+        type: 'text',
+        text: '会員登録をキャンセルしました。'
+      });
+    } else if (event.postback.data === 'registered_member') {
+      return client.replyMessage(event.replyToken,{
+        type: 'text',
+        text: '会員証を提示してください！'
       });
     }
   
@@ -114,8 +140,65 @@ async function handleEvent(event, context) {
           ]
         }
       });
-    }
+    } else if (event.message.text === '会員登録') {
+      // 会員登録でオーケストレータースタート
+      await durableClient.startNew('SignUpOrchestrator', userId);
+      return client.replyMessage(event.replyToken,{
+        type: 'text',
+        text: '会員登録を行います。よろしいですか？',
+        "quickReply": {
+          "items": [
+            {
+              "type": "action",
+              "action": {
+                "type":"postback",
+                "label":"Yes",
+                "data": "signup",
+                "displayText":"はい"
+              }
+            },
+            {
+              "type": "action",
+              "action": {
+                "type":"postback",
+                "label":"No",
+                "data": "signup_cancel",
+                "text":"いいえ"
+              }
+            }
+          ]
+        }
+      });
+    } else if (!!orchestrationStatus && (orchestrationStatus.runtimeStatus === 'Running' || orchestrationStatus.runtimeStatus === 'Pending')) {
+      // 会員名待機中に送られたテキストを会員名としてDB登録するため、テキストを投げる
+      await durableClient.raiseEvent(userId, 'AccountNameEvent', { lineUserId: userId, accountName: event.message.text });
+      return;
+    } else if (event.message.text === '退会') {
+      const query = {
+        query: 'SELECT * from c WHERE c.lineUserId = @lineUserId',
+        parameters: [
+          { name: "@lineUserId", value: userId }
+        ]
+      };
+      
+      const { resources: items } = await cosmosDBContainer.items
+        .query(query)
+        .fetchAll();
+      
+      for (const item of items) {
+        // データ論理削除
+        item.isDeleted = true;
 
+        const { resource: updatedItem } = await cosmosDBContainer
+          .item(item.id)
+          .replace(item);
+      }
+
+      return client.replyMessage(event.replyToken,{
+        type: 'text',
+        text: '退会しました。'
+      });
+    }
   } else if (event.message.type === 'image') {
     //https://developers.line.biz/ja/reference/messaging-api/#image-message
     const blobName = uuidv4() + '.jpg'
